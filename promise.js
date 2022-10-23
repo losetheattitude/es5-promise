@@ -360,54 +360,5 @@ Promise.any = function (promisess) {
     });
 }
 
-function examples() {
-    var promises = new Promise(function (resolve, reject) {
-        setTimeout(function () {
-            reject(1);
-        }, 1000);
-    });
 
-    promises.then(function (result) {
-        console.log("First", result);
-
-        return 5;
-    });
-
-    promises.error(function (err) {
-        console.log(err.message);
-
-        return -1;
-    });
-
-    (new Promise(function (resolve, reject) {
-        setTimeout(function () {
-            resolve(1);
-        }, 1000);
-    })).then(function (r) {
-        console.log("Other First: ", r);
-
-        promises.then(function (result) {
-            console.log("Second", result);
-
-            throw new Error("Exception 1");
-        }).error(function (err) {
-            console.log("Third", err.message);
-
-            return 5;
-        }).then(function (res) {
-            console.log("Fourth", res);
-
-            return 4;
-        }).then(function (res) {
-            console.log("Fifth", res);
-
-            return 12;
-        }).then(function (res2) {
-            console.log("Sixth", res2);
-
-            throw new Error("Exception 2");
-        }).error(function (err) {
-            console.log(err.message);
-        });
-    });
-}
+module.exports = Promise;
