@@ -24,11 +24,9 @@ promise.error(function (err) {
 
 promise.then(function (result) {
     console.log("Should print 1 === ", result);
-
-    throw new Error("This should stop execution");
 });
 
 promise.then(function (result) {
-    console.log("Should skip");
-})
+    console.log(promise);
+});
 

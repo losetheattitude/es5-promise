@@ -1,9 +1,9 @@
 /**
- * Provides functionality while working with group of Rhomises
+ * Provides functionality while working with group of Promises
  * 
- * @param {Array.<Rhomise>} items 
- * @param {Callback} onFirst Callback to be called after first Rhomise resolves
- * @param {Callback} onComplete Callback to be called after all Rhomises resolve
+ * @param {Array.<Promise>} items 
+ * @param {Callback} onFirst Callback to be called after first Promise resolves
+ * @param {Callback} onComplete Callback to be called after all Promises resolve
  */
 function PromiseArray(items, onFirst, onComplete) {
     this.items = items;
@@ -17,11 +17,11 @@ function PromiseArray(items, onFirst, onComplete) {
 }
 
 /**
- * Performs callback attachments to Rhomises so we can be notified about the overall state
+ * Performs callback attachments to Promises so we can be notified about the overall state
  */
 function attach() {
     this.items.forEach(function (item, index) {
-        var rhomise = new Rhomise(function (resolve) {
+        var Promise = new Promise(function (resolve) {
             item.then(function (result) {
                 resolve([index, result]);
             });
@@ -31,7 +31,7 @@ function attach() {
             this.resolved(result[0], result[1]);
         });
 
-        rhomise.then(callback.bind(this));
+        Promise.then(callback.bind(this));
     }, this);
 }
 

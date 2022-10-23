@@ -29,9 +29,17 @@ var STATES = {
     RESOLVED: 0,
     REJECTED: 1,
     RUNNING: 2,
-    ON_CYCLE: 3,
-    IDLE: 4
 }
+
+/**
+ * Represents the cycle state of Promise object
+ * 
+ * @type {Object}
+ */
+var CYCLES = {
+    IDLE: 0,
+    ENGAGED: 1,
+};
 
 /**
  * Creates an Promise object
@@ -50,11 +58,32 @@ function Promise(callable, timeout) {
     if (typeof callable !== "function") {
         throw new Error(ERRORS.INVALID_FUNC);
     }
+
     this.state = STATES.RUNNING;
+    this.cycleState = CYCLES.IDLE;
+
     (this.callable = callable)(
         resolve.bind(this),
         reject.bind(this)
     );
+}
+
+/**
+ * Returns a string representation of Promise
+ */
+Promise.prototype.toString = function () {
+    var base = "Promise { $val }";
+    if (this.state === STATES.RUNNING) {
+        base = base.replace("$val", "Running");
+    }
+    if (this.state === STATES.RESOLVED) {
+        base = base.replace("$val", this.result);
+    }
+    if (this.state === STATES.REJECTED) {
+        base = "Rejected with: " + this.result.message;
+    }
+
+    return base;
 }
 
 /**
@@ -83,8 +112,10 @@ Promise.prototype.getState = function () {
 Promise.prototype.then = function (callable) {
     this.callbacks.push([CALLBACKS.THEN, callable]);
 
-    if (this.state === STATES.IDLE) {
-        this.state = STATES.ON_CYCLE;
+    if (this.state !== STATES.RUNNING &&
+        this.cycleState === CYCLES.IDLE) {
+        this.cycleState = CYCLES.ENGAGED;
+
         setImmediate(this.pipeContext(tick, this.result));
     }
 
@@ -100,8 +131,10 @@ Promise.prototype.then = function (callable) {
 Promise.prototype.error = function (callable) {
     this.callbacks.push([CALLBACKS.ERROR, callable]);
 
-    if (this.state === STATES.IDLE) {
-        this.state = STATES.ON_CYCLE;
+    if (this.state !== STATES.RUNNING &&
+        this.cycleState === CYCLES.IDLE) {
+        this.cycleState = CYCLES.ENGAGED;
+
         setImmediate(this.pipeContext(tick, this.result));
     }
 
@@ -120,7 +153,6 @@ Promise.prototype.pipeContext = function (callable, params) {
     return (function () {
         var parameters = params;
         if (!Array.isArray(parameters)) {
-            //Apply function only accepts parameters as array so we transform
             parameters = [parameters];
         }
 
@@ -153,6 +185,8 @@ function resolve(value) {
     }
 
     this.state = STATES.RESOLVED;
+    this.cycleState = CYCLES.ENGAGED;
+
     clearTimeout(this.timeoutId);
     setImmediate(this.pipeContext(tick, result));
 }
@@ -178,6 +212,8 @@ function reject(value) {
     }
 
     this.state = STATES.REJECTED;
+    this.cycleState = CYCLES.ENGAGED;
+
     clearTimeout(this.timeoutId);
     setImmediate(this.pipeContext(tick, result));
 }
@@ -194,8 +230,8 @@ function getNextIndex(isError) {
         : CALLBACKS.THEN;
 
     for (var i = 0; i < this.callbacks.length; i++) {
-        //Loop until you find a matching callback type and return its index
-        //To be utilized by next tick
+        //Loop until you find a matching callback type 
+        //and return its index for next tick to utilize
         if (this.callbacks[i][0] === callbackType) {
             return i;
         }
@@ -207,12 +243,12 @@ function getNextIndex(isError) {
 /**
  * Do cleanup and perform proper actions before wrapping up Promise
  * 
- * @param {any} result 
- * @param {Boolean} isError 
+ * @param {any} result Value that will be passed to next callback
+ * @param {Boolean} isError Indicates that the result is an error
  */
 function finalize(result, isError) {
     this.result = result;
-    this.state = STATES.IDLE;
+    this.cycleState = CYCLES.IDLE;
 
     if (isError) {
         throw result;
@@ -246,6 +282,8 @@ function tick(result) {
         return finalize.apply(this, [result, isError]);
     }
 
+    //Remove all callbacks up until index + 1 and receive last one
+    var nextItem = this.callbacks.splice(0, index + 1).pop();
     //Prepare a recursive callback which will keep chain executing
     //and assign return values of callbacks to pass them on next callback.
     var callable = this.pipeContext(
@@ -256,9 +294,9 @@ function tick(result) {
                 this.result = err;
             }
 
-            setImmediate(this.pipeContext(tick, this.result))
+            setImmediate(this.pipeContext(tick, this.result));
         },
-        [this.callbacks.splice(0, index + 1).pop()[1], result]
+        [nextItem[1], result]
     );
 
     setImmediate(callable);
@@ -266,8 +304,9 @@ function tick(result) {
 
 
 /**
+ * Returns a Promise resolved with `value`
  * 
- * @param {any} value 
+ * @param {any} value Value to resolve with
  * @returns {Promise}
  */
 Promise.resolve = function (value) {
@@ -277,8 +316,9 @@ Promise.resolve = function (value) {
 };
 
 /**
- * 
- * @param {any} value 
+ * Returns a Promise rejected with `value
+ * `
+ * @param {any} value Value to reject with
  * @returns {Promise}
  */
 Promise.reject = function (value) {
@@ -288,18 +328,18 @@ Promise.reject = function (value) {
 }
 
 /**
- * Returns an Promise which will be resolved with values once all of `promises` resolve
+ * Returns an Promise which will be resolved with values once all of `promisess` resolve
  * 
- * @param {Array.<Promise>} promises
+ * @param {Array.<Promise>} promisess
  * @returns {Promise}
  */
-Promise.all = function (promises) {
+Promise.all = function (promisess) {
     return new Promise(function (resolve, reject) {
         var onComplete = function (completed) {
             resolve(completed);
         };
 
-        var arr = new PromiseArray(promises, null, onComplete);
+        var arr = new PromiseArray(promisess, null, onComplete);
         arr.attach();
     });
 }
@@ -307,17 +347,67 @@ Promise.all = function (promises) {
 /**
  * Returns a Promise which is going to resolve with index and value of Promise whenever one of provided Promises resolves.
  * 
- * @param {Array.<Promise>} promises
+ * @param {Array.<Promise>} promisess 
  */
-Promise.any = function (promises) {
+Promise.any = function (promisess) {
     return new Promise(function (resolve, reject) {
         var onFirst = function (result, index) {
             resolve([result, index]);
         }
 
-        var arr = new PromiseArray(promises, onFirst, null);
+        var arr = new PromiseArray(promisess, onFirst, null);
         arr.attach();
     });
 }
 
-module.exports = Promise;
+function examples() {
+    var promises = new Promise(function (resolve, reject) {
+        setTimeout(function () {
+            reject(1);
+        }, 1000);
+    });
+
+    promises.then(function (result) {
+        console.log("First", result);
+
+        return 5;
+    });
+
+    promises.error(function (err) {
+        console.log(err.message);
+
+        return -1;
+    });
+
+    (new Promise(function (resolve, reject) {
+        setTimeout(function () {
+            resolve(1);
+        }, 1000);
+    })).then(function (r) {
+        console.log("Other First: ", r);
+
+        promises.then(function (result) {
+            console.log("Second", result);
+
+            throw new Error("Exception 1");
+        }).error(function (err) {
+            console.log("Third", err.message);
+
+            return 5;
+        }).then(function (res) {
+            console.log("Fourth", res);
+
+            return 4;
+        }).then(function (res) {
+            console.log("Fifth", res);
+
+            return 12;
+        }).then(function (res2) {
+            console.log("Sixth", res2);
+
+            throw new Error("Exception 2");
+        }).error(function (err) {
+            console.log(err.message);
+        });
+    });
+}
