@@ -14,9 +14,7 @@ function PromiseArray(items, onFirst, onReject, onComplete) {
     this.onReject = onReject;
     this.onComplete = onComplete;
 
-    this.attach = attach;
     this.resulted = resulted;
-    this.unsubscribe = unsubscribe;
 }
 
 /**
@@ -25,7 +23,7 @@ function PromiseArray(items, onFirst, onReject, onComplete) {
  * 
  * @param {string | undefined} event Event name 
  */
-function unsubscribe(event) {
+PromiseArray.prototype.unsubscribe = function (event) {
     if (typeof event !== "string") {
         this.onFirst = null;
         this.onReject = null;
@@ -43,7 +41,7 @@ function unsubscribe(event) {
 /**
  * Performs callback attachments to Promises so we can be notified about the overall state
  */
-function attach() {
+PromiseArray.prototype.attach = function () {
     this.items.forEach(function (item, index) {
         var promise = new Promise(function (resolve, reject) {
             item.then(function (result) {
