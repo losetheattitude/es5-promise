@@ -7,8 +7,8 @@ var PromiseArray = require("./promiseArray");
  */
 var ERRORS = {
     INVALID_FUNC: "Provided parameter is not a function. Please provide a function with two default parameters",
-    INVALID_STATE: "Rhomise has already been concluded!",
-    TIMEOUT: "Rhomise hasnt been resolved within predefined timeout"
+    INVALID_STATE: "Promise has already been concluded!",
+    TIMEOUT: "Promise hasnt been resolved within predefined timeout"
 };
 
 /**
@@ -22,7 +22,7 @@ var CALLBACKS = {
 }
 
 /**
- * Represents the available states of Rhomise object
+ * Represents the available states of Promise object
  * @type {Object}
  */
 var STATES = {
@@ -32,7 +32,7 @@ var STATES = {
 }
 
 /**
- * Represents the cycle state of Rhomise object
+ * Represents the cycle state of Promise object
  * 
  * @type {Object}
  */
@@ -42,13 +42,13 @@ var CYCLES = {
 };
 
 /**
- * Creates an Rhomise object
+ * Creates an Promise object
  * 
  * @param {Function} callable Function to be called
  * @param {number} timeout Timeout value in milliseconds, default: 5000 milliseconds
  * @throws On timeout 
  */
-function Rhomise(callable, timeout) {
+function Promise(callable, timeout) {
     this.result = null;
     this.callbacks = [];
     this.timeoutId = setTimeout(function () {
@@ -69,10 +69,10 @@ function Rhomise(callable, timeout) {
 }
 
 /**
- * Returns a string representation of Rhomise
+ * Returns a string representation of Promise
  */
-Rhomise.prototype.toString = function () {
-    var base = "Rhomise { $val }";
+Promise.prototype.toString = function () {
+    var base = "Promise { $val }";
     if (this.state === STATES.RUNNING) {
         base = base.replace("$val", "Running");
     }
@@ -87,9 +87,9 @@ Rhomise.prototype.toString = function () {
 }
 
 /**
- * Returns a boolean indicating whether Rhomise is still running or not
+ * Returns a boolean indicating whether Promise is still running or not
  */
-Rhomise.prototype.isFulfilled = function () {
+Promise.prototype.isFulfilled = function () {
     return [STATES.RESOLVED, STATES.REJECTED].some(function (state) {
         return this.state === state;
     });
@@ -99,7 +99,7 @@ Rhomise.prototype.isFulfilled = function () {
  * Returns a number indicating current state of caller
  * @return {number} 
  */
-Rhomise.prototype.getState = function () {
+Promise.prototype.getState = function () {
     return this.state;
 }
 
@@ -107,9 +107,9 @@ Rhomise.prototype.getState = function () {
  * Registers a then callback and returns the called instance
  * 
  * @param {Function} callable Callback to be registered
- * @return {Rhomise} Returns the object that this function has been invoked on
+ * @return {Promise} Returns the object that this function has been invoked on
  */
-Rhomise.prototype.then = function (callable, thisArg) {
+Promise.prototype.then = function (callable, thisArg) {
     this.callbacks.push([CALLBACKS.THEN, callable.bind(thisArg ? thisArg : null)]);
 
     if (this.state !== STATES.RUNNING &&
@@ -126,9 +126,9 @@ Rhomise.prototype.then = function (callable, thisArg) {
  * Registers an error callback and returns the called instance
  * 
  * @param {Function} callable
- * @return {Rhomise} Returns the object this function has been invoked on
+ * @return {Promise} Returns the object this function has been invoked on
  */
-Rhomise.prototype.error = function (callable, thisArg) {
+Promise.prototype.error = function (callable, thisArg) {
     this.callbacks.push([CALLBACKS.ERROR, callable.bind(thisArg ? thisArg : null)]);
 
     if (this.state !== STATES.RUNNING &&
@@ -149,7 +149,7 @@ Rhomise.prototype.error = function (callable, thisArg) {
  * @param {any} params Parameters to pass
  * @return {function} 
  */
-Rhomise.prototype.pipeContext = function (callable, params) {
+Promise.prototype.pipeContext = function (callable, params) {
     return (function () {
         var parameters = params;
         if (!Array.isArray(parameters)) {
@@ -161,10 +161,10 @@ Rhomise.prototype.pipeContext = function (callable, params) {
 }
 
 /**
- * Resolves the Rhomise with given `value` and sets object's states as "resolved"
+ * Resolves the Promise with given `value` and sets object's states as "resolved"
  * 
  * @param {any|Function} value Value to resolve with
- * @throws {Error} On non-running states of Rhomise
+ * @throws {Error} On non-running states of Promise
  */
 function resolve(value) {
     if (this.isFulfilled()) {
@@ -187,10 +187,10 @@ function resolve(value) {
 }
 
 /**
- * Rejects the Rhomise with given `value` and sets object's states as "rejected"
+ * Rejects the Promise with given `value` and sets object's states as "rejected"
  * 
  * @param {any} value
- * @throws {Error} On non-running states of Rhomise
+ * @throws {Error} On non-running states of Promise
  */
 function reject(value) {
     if (this.isFulfilled()) {
@@ -205,7 +205,7 @@ function reject(value) {
 }
 
 /**
- * Returns next `type` callback from Rhomise
+ * Returns next `type` callback from Promise
  * 
  * @param {Boolean} isError 
  * @return {number | null}
@@ -227,7 +227,7 @@ function getNextIndex(isError) {
 }
 
 /**
- * Do cleanup and perform proper actions before wrapping up Rhomise
+ * Do cleanup and perform proper actions before wrapping up Promise
  * 
  * @param {any} result Value that will be passed to next callback
  * @param {Boolean} isError Indicates that the result is an error
@@ -237,7 +237,7 @@ function finalize(result, isError) {
     this.cycleState = CYCLES.IDLE;
 
     if (isError) {
-        throw new Error("Unhandled rhomise rejection" + result);
+        throw new Error("Unhandled promise rejection" + result);
     }
 }
 
@@ -256,7 +256,7 @@ function tick(result, isError) {
      * One could be that callbacks are already exhausted by former exceptions and
      * there are no error callbacks present for this tick
      * 
-     * Second one could be that its a Rhomise that hasnt been registered any callbacks
+     * Second one could be that its a Promise that hasnt been registered any callbacks
      */
     if (this.callbacks.length === 0 && !isError) {
         return finalize.apply(this, [result, isError]);
@@ -290,37 +290,37 @@ function tick(result, isError) {
 
 
 /**
- * Returns a Rhomise resolved with `value`
+ * Returns a Promise resolved with `value`
  * 
  * @param {any} value Value to resolve with
- * @returns {Rhomise}
+ * @returns {Promise}
  */
-Rhomise.resolve = function (value) {
-    return new Rhomise(function (resolve, reject) {
+Promise.resolve = function (value) {
+    return new Promise(function (resolve, reject) {
         resolve(value);
     });
 };
 
 /**
- * Returns a Rhomise rejected with `value
+ * Returns a Promise rejected with `value
  * `
  * @param {any} value Value to reject with
- * @returns {Rhomise}
+ * @returns {Promise}
  */
-Rhomise.reject = function (value) {
-    return new Rhomise(function (resolve, reject) {
+Promise.reject = function (value) {
+    return new Promise(function (resolve, reject) {
         reject(value);
     });
 }
 
 /**
- * Returns an Rhomise which will be resolved with values once all of `rhomises` resolve
+ * Returns an Promise which will be resolved with values once all of `promises` resolve
  * 
- * @param {Array.<Rhomise>} rhomises
- * @returns {Rhomise}
+ * @param {Array.<Promise>} promises
+ * @returns {Promise}
  */
-Rhomise.all = function (rhomises) {
-    return new Rhomise(function (resolve, reject) {
+Promise.all = function (promises) {
+    return new Promise(function (resolve, reject) {
         var onComplete = function (result) {
             resolve(result);
         };
@@ -331,8 +331,8 @@ Rhomise.all = function (rhomises) {
             reject(err);
         }
 
-        var arr = new RhomiseArray(
-            rhomises,
+        var arr = new PromiseArray(
+            promises,
             null,
             onReject,
             onComplete
@@ -342,17 +342,17 @@ Rhomise.all = function (rhomises) {
 }
 
 /**
- * Returns a Rhomise which is going to resolve with index and value of Rhomise whenever one of provided Rhomises resolves.
+ * Returns a Promise which is going to resolve with index and value of Promise whenever one of provided Promises resolves.
  * 
- * @param {Array.<Rhomise>} rhomises 
+ * @param {Array.<Promise>} promises 
  */
-Rhomise.any = function (rhomises) {
-    return new Rhomise(function (resolve, reject) {
+Promise.any = function (promises) {
+    return new Promise(function (resolve, reject) {
         var onFirst = function (result, index) {
             resolve([result, index]);
         }
 
-        var arr = new RhomiseArray(rhomises, onFirst);
+        var arr = new PromiseArray(promises, onFirst);
         arr.attach();
     });
 }

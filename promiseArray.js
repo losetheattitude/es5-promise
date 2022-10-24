@@ -1,12 +1,12 @@
 /**
- * Provides functionality while working with group of Rhomises
+ * Provides functionality while working with group of Promises
  * 
- * @param {Array.<Rhomise>} items 
- * @param {Function} onFirst Callback to be called after first Rhomise resolves
- * @param {Function} onReject Callback to be called after first Rhomise rejects
- * @param {Function} onComplete Callback to be called after all Rhomises resolve
+ * @param {Array.<Promise>} items 
+ * @param {Function} onFirst Callback to be called after first Promise resolves
+ * @param {Function} onReject Callback to be called after first Promise rejects
+ * @param {Function} onComplete Callback to be called after all Promises resolve
  */
-function RhomiseArray(items, onFirst, onReject, onComplete) {
+function PromiseArray(items, onFirst, onReject, onComplete) {
     this.items = items;
     this.completed = [];
 
@@ -41,11 +41,11 @@ function unsubscribe(event) {
 }
 
 /**
- * Performs callback attachments to Rhomises so we can be notified about the overall state
+ * Performs callback attachments to Promises so we can be notified about the overall state
  */
 function attach() {
     this.items.forEach(function (item, index) {
-        var rhomise = new Rhomise(function (resolve, reject) {
+        var promise = new Promise(function (resolve, reject) {
             item.then(function (result) {
                 resolve([result, index]);
             }).error(function (err) {
@@ -57,7 +57,7 @@ function attach() {
             this.resulted(result[0], result[1]);
         };
 
-        rhomise.then(callback, this).error(function (err) {
+        promise.then(callback, this).error(function (err) {
             if (this.onReject) this.onReject(err);
         }, this);
     }, this);
