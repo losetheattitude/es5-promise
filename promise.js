@@ -7,8 +7,8 @@ var PromiseArray = require("./promiseArray");
  */
 var ERRORS = {
     INVALID_FUNC: "Provided parameter is not a function. Please provide a function with two default parameters",
-    INVALID_STATE: "Promise has already been concluded!",
-    TIMEOUT: "Promise hasnt been resolved within predefined timeout"
+    INVALID_STATE: "TPromise has already been concluded!",
+    TIMEOUT: "TPromise hasnt been resolved within predefined timeout"
 };
 
 /**
@@ -22,7 +22,7 @@ var CALLBACKS = {
 }
 
 /**
- * Represents the available states of Promise object
+ * Represents the available states of TPromise object
  * @type {Object}
  */
 var STATES = {
@@ -32,7 +32,7 @@ var STATES = {
 }
 
 /**
- * Represents the cycle state of Promise object
+ * Represents the cycle state of TPromise object
  * 
  * @type {Object}
  */
@@ -42,13 +42,13 @@ var CYCLES = {
 };
 
 /**
- * Creates an Promise object
+ * Creates an TPromise object
  * 
  * @param {Function} callable Function to be called
  * @param {number} timeout Timeout value in milliseconds, default: 5000 milliseconds
  * @throws On timeout 
  */
-function Promise(callable, timeout) {
+function TPromise(callable, timeout) {
     this.result = null;
     this.callbacks = [];
     this.timeoutId = setTimeout(function () {
@@ -69,10 +69,10 @@ function Promise(callable, timeout) {
 }
 
 /**
- * Returns a string representation of Promise
+ * Returns a string representation of TPromise
  */
-Promise.prototype.toString = function () {
-    var base = "Promise { $val }";
+TPromise.prototype.toString = function () {
+    var base = "TPromise { $val }";
     if (this.state === STATES.RUNNING) {
         base = base.replace("$val", "Running");
     }
@@ -87,19 +87,19 @@ Promise.prototype.toString = function () {
 }
 
 /**
- * Returns a boolean indicating whether Promise is still running or not
+ * Returns a boolean indicating whether TPromise is still running or not
  */
-Promise.prototype.isFulfilled = function () {
+TPromise.prototype.isFulfilled = function () {
     return [STATES.RESOLVED, STATES.REJECTED].some(function (state) {
         return this.state === state;
-    });
+    }, this);
 }
 
 /**
  * Returns a number indicating current state of caller
  * @return {number} 
  */
-Promise.prototype.getState = function () {
+TPromise.prototype.getState = function () {
     return this.state;
 }
 
@@ -107,10 +107,13 @@ Promise.prototype.getState = function () {
  * Registers a then callback and returns the called instance
  * 
  * @param {Function} callable Callback to be registered
- * @return {Promise} Returns the object that this function has been invoked on
+ * @return {TPromise} Returns the object that this function has been invoked on
  */
-Promise.prototype.then = function (callable, thisArg) {
-    this.callbacks.push([CALLBACKS.THEN, callable.bind(thisArg ? thisArg : null)]);
+TPromise.prototype.then = function (callable, thisArg) {
+    if (thisArg !== undefined) {
+        callable = callable.bind(thisArg);
+    }
+    this.callbacks.push([CALLBACKS.THEN, callable]);
 
     if (this.state !== STATES.RUNNING &&
         this.cycleState === CYCLES.IDLE) {
@@ -126,10 +129,13 @@ Promise.prototype.then = function (callable, thisArg) {
  * Registers an error callback and returns the called instance
  * 
  * @param {Function} callable
- * @return {Promise} Returns the object this function has been invoked on
+ * @return {TPromise} Returns the object this function has been invoked on
  */
-Promise.prototype.error = function (callable, thisArg) {
-    this.callbacks.push([CALLBACKS.ERROR, callable.bind(thisArg ? thisArg : null)]);
+TPromise.prototype.error = function (callable, thisArg) {
+    if (thisArg !== undefined) {
+        callable = callable.bind(thisArg);
+    }
+    this.callbacks.push([CALLBACKS.ERROR, callable]);
 
     if (this.state !== STATES.RUNNING &&
         this.cycleState === CYCLES.IDLE) {
@@ -149,7 +155,7 @@ Promise.prototype.error = function (callable, thisArg) {
  * @param {any} params Parameters to pass
  * @return {function} 
  */
-Promise.prototype.pipeContext = function (callable, params) {
+TPromise.prototype.pipeContext = function (callable, params) {
     return (function () {
         var parameters = params;
         if (!Array.isArray(parameters)) {
@@ -161,36 +167,28 @@ Promise.prototype.pipeContext = function (callable, params) {
 }
 
 /**
- * Resolves the Promise with given `value` and sets object's states as "resolved"
+ * Resolves the TPromise with given `value` and sets object's states as "resolved"
  * 
  * @param {any|Function} value Value to resolve with
- * @throws {Error} On non-running states of Promise
+ * @throws {Error} On non-running states of TPromise
  */
 function resolve(value) {
     if (this.isFulfilled()) {
         throw new Error(ERRORS.INVALID_STATE);
     }
 
-    var result = value;
-    //This means, developer is trying to resolve with multiple values
-    //In order to make this work we have to wrap it with another array
-    //So pipeContext wont perceive as parameters to `tick` function
-    if (Array.isArray(result)) {
-        result = [result];
-    }
-
     this.state = STATES.RESOLVED;
     this.cycleState = CYCLES.ENGAGED;
 
     clearTimeout(this.timeoutId);
-    this.pipeContext(tick, [result, false])();
+    this.pipeContext(tick, [value, false])();
 }
 
 /**
- * Rejects the Promise with given `value` and sets object's states as "rejected"
+ * Rejects the TPromise with given `value` and sets object's states as "rejected"
  * 
  * @param {any} value
- * @throws {Error} On non-running states of Promise
+ * @throws {Error} On non-running states of TPromise
  */
 function reject(value) {
     if (this.isFulfilled()) {
@@ -205,9 +203,9 @@ function reject(value) {
 }
 
 /**
- * Returns next `type` callback from Promise
+ * Returns next `type` callback from TPromise
  * 
- * @param {Boolean} isError 
+ * @param {boolean} isError 
  * @return {number | null}
  */
 function getNextIndex(isError) {
@@ -227,17 +225,17 @@ function getNextIndex(isError) {
 }
 
 /**
- * Do cleanup and perform proper actions before wrapping up Promise
+ * Do cleanup and perform proper actions before wrapping up TPromise
  * 
  * @param {any} result Value that will be passed to next callback
- * @param {Boolean} isError Indicates that the result is an error
+ * @param {boolean} isError Indicates that the result is an error
  */
 function finalize(result, isError) {
     this.result = result;
     this.cycleState = CYCLES.IDLE;
 
     if (isError) {
-        throw new Error("Unhandled promise rejection" + result);
+        throw new Error("Unhandled tpromise rejection, Result: " + result);
     }
 }
 
@@ -256,7 +254,7 @@ function tick(result, isError) {
      * One could be that callbacks are already exhausted by former exceptions and
      * there are no error callbacks present for this tick
      * 
-     * Second one could be that its a Promise that hasnt been registered any callbacks
+     * Second one could be that its a TPromise that hasnt been registered any callbacks
      */
     if (this.callbacks.length === 0 && !isError) {
         return finalize.apply(this, [result, isError]);
@@ -290,72 +288,94 @@ function tick(result, isError) {
 
 
 /**
- * Returns a Promise resolved with `value`
+ * Returns a TPromise resolved with `value`
  * 
  * @param {any} value Value to resolve with
- * @returns {Promise}
+ * @returns {TPromise}
  */
-Promise.resolve = function (value) {
-    return new Promise(function (resolve, reject) {
+TPromise.resolve = function (value) {
+    return new TPromise(function (resolve, reject) {
         resolve(value);
     });
 };
 
 /**
- * Returns a Promise rejected with `value
+ * Returns a TPromise rejected with `value
  * `
  * @param {any} value Value to reject with
- * @returns {Promise}
+ * @returns {TPromise}
  */
-Promise.reject = function (value) {
-    return new Promise(function (resolve, reject) {
+TPromise.reject = function (value) {
+    return new TPromise(function (resolve, reject) {
         reject(value);
     });
 }
 
 /**
- * Returns an Promise which will be resolved with values once all of `promises` resolve
+ * Returns an TPromise which will be resolved with values once all of `tpromises` resolve
  * 
- * @param {Array.<Promise>} promises
- * @returns {Promise}
+ * @param {Array.<TPromise>} tpromises
+ * @returns {TPromise}
  */
-Promise.all = function (promises) {
-    return new Promise(function (resolve, reject) {
-        var onComplete = function (result) {
-            resolve(result);
-        };
-
-        var onReject = function (err) {
-            arr.unsubscribe();
-
-            reject(err);
+TPromise.all = function (tpromises) {
+    return new TPromise(function (resolve, reject) {
+        if (tpromises.length === 0) {
+            return resolve([]);
         }
 
-        var arr = new PromiseArray(
-            promises,
-            null,
-            onReject,
-            onComplete
-        );
+        if (tpromises.every(function (tpromise) {
+            return !(tpromise instanceof TPromise);
+        })) {
+            return resolve(tpromises);
+        }
+
+        var arr = new TPromiseArray(tpromises);
+        arr.subscribe("onReject", function (err) {
+            reject(err);
+        });
+        arr.subscribe("onSuccess", function (result) {
+            resolve(result);
+        });
+
         arr.attach();
     });
 }
 
 /**
- * Returns a Promise which is going to resolve with index and value of Promise whenever one of provided Promises resolves.
+ * Returns a TPromise which is going to resolve with index and value of TPromise
+ * whenever one of provided TPromises resolves.
  * 
- * @param {Array.<Promise>} promises 
+ * @param {Array.<TPromise>} tpromises 
  */
-Promise.any = function (promises) {
-    return new Promise(function (resolve, reject) {
-        var onFirst = function (result, index) {
-            resolve([result, index]);
+TPromise.any = function (tpromises) {
+    return new TPromise(function (resolve, reject) {
+        if (tpromises.length === 0) {
+            return reject("Empty array");
         }
 
-        var arr = new PromiseArray(promises, onFirst);
+        if (tpromises.every(function (tpromise) {
+            return !(tpromise instanceof TPromise);
+        })) {
+            return resolve(tpromises);
+        }
+
+        var arr = new TPromiseArray(tpromises);
+        arr.subscribe("onResolve", function (result, index) {
+            //Subsequent calls after first one will generate an interesting edge case
+            //where resolving any TPromise that provided to .any will trigger any's TPromise to throw
+            //due to trying to resolve an already resolved TPromise 
+            //but because we are appending .error callback in .attach method, error will be surpressed there
+
+            //Expected behavior: Subsequent calls after first one should terminate
+            //execution with an exception, originating from resolve of .any's TPromise
+            resolve([result, index]);
+        });
+        arr.subscribe("onFailure", function (results) {
+            reject(results);
+        });
+
         arr.attach();
     });
 }
 
-
-module.exports = Promise;
+module.exports = TPromise;

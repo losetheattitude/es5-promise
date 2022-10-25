@@ -4,25 +4,25 @@ function rhomiseAll() {
     var all = Rhomise.all([
         new Rhomise(function (resolve, reject) {
             setTimeout(function () {
-                reject(123);
+                reject(1234);
             }, 500);
         }),
         new Rhomise(function (resolve, reject) {
             setTimeout(function () {
-                resolve(123);
-            }, 4000);
+                resolve(1235);
+            }, 2000);
         }),
         new Rhomise(function (resolve, reject) {
             setTimeout(function () {
-                resolve(123);
-            }, 4000);
+                resolve(1236);
+            }, 2000);
         })
-    ])
+    ]);
 
     all.then(function (result) {
-        console.log(result);
+        console.log("ALL THEN", result);
     }).error(function (err) {
-        console.log(err);
+        console.log("ALL ERROR", err);
 
         var timer = setInterval(function () {
             console.log("Executing");
@@ -30,8 +30,6 @@ function rhomiseAll() {
 
         setTimeout(function () {
             clearInterval(timer);
-
-            console.log(all);
         }, 10000);
     });
 }
@@ -60,7 +58,7 @@ function rhomiseChain() {
     });
 
     rhomise2.error(function (err) {
-        console.log(err.message);
+        console.log(err);
 
         return -1;
     });
@@ -112,7 +110,10 @@ function resolveWithRhomise() {
     });
 
     rhomise1.then(function (res) {
-        console.log("First", res);
+        var promise = res();
+        promise.then(function (res2) {
+            console.log(res2, "Other")
+        })
 
         return 23;
     }).then(function (res) {
@@ -125,10 +126,34 @@ function resolveWithRhomise() {
             }, 4000);
         });
     }).then(function (res) {
-        console.log(res);
+        res.then(function (res3) {
+            console.log(res3);
+        });
 
         throw new Error("Works")
     }).error(function (err) {
         console.log(err);
     });
 }
+
+var b = Rhomise.any([
+    new Rhomise(function (resolve, reject) {
+        setTimeout(function () {
+            resolve(123);
+        }, 500);
+    }),
+    new Rhomise(function (resolve, reject) {
+        setTimeout(function () {
+            resolve("Other");
+        }, 4000);
+    }),
+    new Rhomise(function (resolve, reject) {
+        resolve(12321312);
+    })
+]);
+
+b.then(function (t) {
+    console.log(t);
+}).error(function (t) {
+    console.log("ERRRR", t);
+});
