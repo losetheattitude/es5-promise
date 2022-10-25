@@ -1,18 +1,18 @@
-var Promise = require("./promise");
+var TPromise = require("./promise");
 
-function rhomiseAll() {
-    var all = Rhomise.all([
-        new Rhomise(function (resolve, reject) {
+function tpromiseAll() {
+    var all = TPromise.all([
+        new TPromise(function (resolve, reject) {
             setTimeout(function () {
                 reject(1234);
             }, 500);
         }),
-        new Rhomise(function (resolve, reject) {
+        new TPromise(function (resolve, reject) {
             setTimeout(function () {
                 resolve(1235);
             }, 2000);
         }),
-        new Rhomise(function (resolve, reject) {
+        new TPromise(function (resolve, reject) {
             setTimeout(function () {
                 resolve(1236);
             }, 2000);
@@ -34,9 +34,9 @@ function rhomiseAll() {
     });
 }
 
-function rhomiseChain() {
+function tpromiseChain() {
     var generate = function () {
-        return new Rhomise(function (resolve, reject) {
+        return new TPromise(function (resolve, reject) {
             setTimeout(function () {
                 console.log("inside generate");
                 resolve("Something wrong");
@@ -44,33 +44,33 @@ function rhomiseChain() {
         });
     }
 
-    var rhomise2 = new Rhomise(function (resolve, reject) {
+    var tpromise2 = new TPromise(function (resolve, reject) {
         setTimeout(function () {
-            console.log("inside rhomise2")
+            console.log("inside tpromise2")
             reject(generate);
         }, 2000);
     });
 
-    rhomise2.then(function (result) {
+    tpromise2.then(function (result) {
         console.log("First", result);
 
         return 5;
     });
 
-    rhomise2.error(function (err) {
+    tpromise2.error(function (err) {
         console.log(err);
 
         return -1;
     });
 
-    (new Rhomise(function (resolve, reject) {
+    (new TPromise(function (resolve, reject) {
         setTimeout(function () {
             resolve(1);
         }, 1000);
     })).then(function (r) {
         console.log("Other First: ", r);
 
-        rhomise2.then(function (result) {
+        tpromise2.then(function (result) {
             console.log("Second", result);
 
             throw new Error("Exception 1");
@@ -96,20 +96,20 @@ function rhomiseChain() {
     });
 }
 
-function resolveWithRhomise() {
-    function generateRhomise() {
-        return new Rhomise(function (resolve, reject) {
+function resolveWithTPromise() {
+    function generateTPromise() {
+        return new TPromise(function (resolve, reject) {
             setTimeout(function () {
                 resolve(5)
             }, 500);
         });
     }
 
-    var rhomise1 = new Rhomise(function (resolve, reject) {
-        resolve(generateRhomise);
+    var tpromise1 = new TPromise(function (resolve, reject) {
+        resolve(generateTPromise);
     });
 
-    rhomise1.then(function (res) {
+    tpromise1.then(function (res) {
         var promise = res();
         promise.then(function (res2) {
             console.log(res2, "Other")
@@ -119,7 +119,7 @@ function resolveWithRhomise() {
     }).then(function (res) {
         throw new Error(res);
     }).error(function (err) {
-        return new Rhomise(function (resolve, reject) {
+        return new TPromise(function (resolve, reject) {
             setTimeout(function () {
                 console.log("Before resolving err");
                 resolve(err);
@@ -136,18 +136,18 @@ function resolveWithRhomise() {
     });
 }
 
-var b = Rhomise.any([
-    new Rhomise(function (resolve, reject) {
+var b = TPromise.any([
+    new TPromise(function (resolve, reject) {
         setTimeout(function () {
             resolve(123);
         }, 500);
     }),
-    new Rhomise(function (resolve, reject) {
+    new TPromise(function (resolve, reject) {
         setTimeout(function () {
             resolve("Other");
         }, 4000);
     }),
-    new Rhomise(function (resolve, reject) {
+    new TPromise(function (resolve, reject) {
         resolve(12321312);
     })
 ]);

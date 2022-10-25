@@ -1,4 +1,4 @@
-var PromiseArray = require("./promiseArray");
+var TPromiseArray = require("./promiseArray")
 
 /**
  * Consists of error messages this object can produce
@@ -6,9 +6,7 @@ var PromiseArray = require("./promiseArray");
  * @type {Object}
  */
 var ERRORS = {
-    INVALID_FUNC: "Provided parameter is not a function. Please provide a function with two default parameters",
-    INVALID_STATE: "TPromise has already been concluded!",
-    TIMEOUT: "TPromise hasnt been resolved within predefined timeout"
+    INVALID_FUNC: "Provided parameter is not a function.",
 };
 
 /**
@@ -51,21 +49,15 @@ var CYCLES = {
 function TPromise(callable, timeout) {
     this.result = null;
     this.callbacks = [];
-    this.timeoutId = setTimeout(function () {
-        throw new Error(ERRORS.TIMEOUT);
-    }, timeout ? timeout : 5000);
-
+    this.cycleResult = null;
+    this.state = STATES.RUNNING;
+    this.cycleState = CYCLES.IDLE;
+    this.callable = callable;
     if (typeof callable !== "function") {
         throw new Error(ERRORS.INVALID_FUNC);
     }
 
-    this.state = STATES.RUNNING;
-    this.cycleState = CYCLES.IDLE;
-
-    (this.callable = callable)(
-        resolve.bind(this),
-        reject.bind(this)
-    );
+    this.callable(resolve.bind(this), reject.bind(this));
 }
 
 /**
@@ -80,7 +72,7 @@ TPromise.prototype.toString = function () {
         base = base.replace("$val", this.result);
     }
     if (this.state === STATES.REJECTED) {
-        base = "Rejected with: " + this.result.message;
+        base = "Rejected with: " + this.result;
     }
 
     return base;
@@ -89,10 +81,8 @@ TPromise.prototype.toString = function () {
 /**
  * Returns a boolean indicating whether TPromise is still running or not
  */
-TPromise.prototype.isFulfilled = function () {
-    return [STATES.RESOLVED, STATES.REJECTED].some(function (state) {
-        return this.state === state;
-    }, this);
+TPromise.prototype.isConcluded = function () {
+    return this.state !== STATES.RUNNING;
 }
 
 /**
@@ -119,7 +109,7 @@ TPromise.prototype.then = function (callable, thisArg) {
         this.cycleState === CYCLES.IDLE) {
         this.cycleState = CYCLES.ENGAGED;
 
-        this.pipeContext(tick, [this.result, false])();
+        this.pipeContext(tick, [this.cycleResult, false])();
     }
 
     return this;
@@ -141,7 +131,7 @@ TPromise.prototype.error = function (callable, thisArg) {
         this.cycleState === CYCLES.IDLE) {
         this.cycleState = CYCLES.ENGAGED;
 
-        this.pipeContext(tick, [this.result, false])();
+        this.pipeContext(tick, [this.cycleResult, false])();
     }
 
     return this;
@@ -173,14 +163,15 @@ TPromise.prototype.pipeContext = function (callable, params) {
  * @throws {Error} On non-running states of TPromise
  */
 function resolve(value) {
-    if (this.isFulfilled()) {
-        throw new Error(ERRORS.INVALID_STATE);
+    if (this.isConcluded()) {
+        return this.result;
     }
 
+    this.result = value;
+    this.cycleResult = value;
     this.state = STATES.RESOLVED;
     this.cycleState = CYCLES.ENGAGED;
 
-    clearTimeout(this.timeoutId);
     this.pipeContext(tick, [value, false])();
 }
 
@@ -191,14 +182,15 @@ function resolve(value) {
  * @throws {Error} On non-running states of TPromise
  */
 function reject(value) {
-    if (this.isFulfilled()) {
-        throw new Error(ERRORS.INVALID_STATE);
+    if (this.isConcluded()) {
+        return this.result;
     }
 
+    this.result = value;
+    this.cycleResult = value;
     this.state = STATES.REJECTED;
     this.cycleState = CYCLES.ENGAGED;
 
-    clearTimeout(this.timeoutId);
     this.pipeContext(tick, [value, true])();
 }
 
@@ -231,11 +223,11 @@ function getNextIndex(isError) {
  * @param {boolean} isError Indicates that the result is an error
  */
 function finalize(result, isError) {
-    this.result = result;
+    this.cycleResult = result;
     this.cycleState = CYCLES.IDLE;
 
     if (isError) {
-        throw new Error("Unhandled tpromise rejection, Result: " + result);
+        throw new Error("Unhandled tpromise rejection, " + result);
     }
 }
 
@@ -265,20 +257,28 @@ function tick(result, isError) {
         return finalize.apply(this, [result, isError]);
     }
 
+    //Receive the callback of correct type
     var nextItem = this.callbacks.splice(0, index + 1).pop();
+    //Execute error callback on same tick
+    if (isError) {
+        var nextCycle = executor.bind(this)(
+            nextItem[1],
+            result
+        );
+
+        return nextCycle();
+    }
+
     //Prepare a recursive callback which will keep chain executing
     //and assign return values of callbacks to pass them on next callback.
     var callable = this.pipeContext(
-        function (callable, parameter) {
-            var error = false;
-            try {
-                this.result = callable(parameter);
-            } catch (err) {
-                error = true;
-                this.result = err;
-            }
+        function (callback, parameter) {
+            var nextCycle = executor.bind(this)(
+                callback,
+                parameter
+            );
 
-            setImmediate(this.pipeContext(tick, [this.result, error]));
+            setImmediate(nextCycle);
         },
         [nextItem[1], result]
     );
@@ -286,6 +286,27 @@ function tick(result, isError) {
     setImmediate(callable);
 }
 
+/**
+ * Executes given `callback` with `result`
+ * and assigns response of this invocation as TPromise result.
+ * 
+ * @param {Function} callback 
+ * @param {any} result 
+ * @returns {Function} A function containing next tick
+ */
+function executor(callback, result) {
+    try {
+        this.cycleResult = callback(result);
+    } catch (err) {
+        this.cycleResult = err;
+    }
+
+    var params = [
+        this.cycleResult,
+        this.cycleResult instanceof Error
+    ];
+    return this.pipeContext(tick, params);
+}
 
 /**
  * Returns a TPromise resolved with `value`
@@ -300,8 +321,8 @@ TPromise.resolve = function (value) {
 };
 
 /**
- * Returns a TPromise rejected with `value
- * `
+ * Returns a TPromise rejected with `value`
+ * 
  * @param {any} value Value to reject with
  * @returns {TPromise}
  */
@@ -323,15 +344,9 @@ TPromise.all = function (tpromises) {
             return resolve([]);
         }
 
-        if (tpromises.every(function (tpromise) {
-            return !(tpromise instanceof TPromise);
-        })) {
-            return resolve(tpromises);
-        }
-
         var arr = new TPromiseArray(tpromises);
-        arr.subscribe("onReject", function (err) {
-            reject(err);
+        arr.subscribe("onReject", function (err, index) {
+            reject([err, index]);
         });
         arr.subscribe("onSuccess", function (result) {
             resolve(result);
@@ -342,8 +357,8 @@ TPromise.all = function (tpromises) {
 }
 
 /**
- * Returns a TPromise which is going to resolve with index and value of TPromise
- * whenever one of provided TPromises resolves.
+ * Returns a TPromise which is going to resolve whenever 
+ * one of provided TPromises resolves or all of them rejects.
  * 
  * @param {Array.<TPromise>} tpromises 
  */
@@ -353,25 +368,37 @@ TPromise.any = function (tpromises) {
             return reject("Empty array");
         }
 
-        if (tpromises.every(function (tpromise) {
-            return !(tpromise instanceof TPromise);
-        })) {
-            return resolve(tpromises);
-        }
-
         var arr = new TPromiseArray(tpromises);
         arr.subscribe("onResolve", function (result, index) {
-            //Subsequent calls after first one will generate an interesting edge case
-            //where resolving any TPromise that provided to .any will trigger any's TPromise to throw
-            //due to trying to resolve an already resolved TPromise 
-            //but because we are appending .error callback in .attach method, error will be surpressed there
-
-            //Expected behavior: Subsequent calls after first one should terminate
-            //execution with an exception, originating from resolve of .any's TPromise
             resolve([result, index]);
         });
         arr.subscribe("onFailure", function (results) {
             reject(results);
+        });
+
+        arr.attach();
+    });
+}
+
+/**
+ * Resolves on first concluded TPromise or a non-TPromise value
+ * 
+ * @param {Array.<TPromise|any>} tpromises 
+ * @returns {any} Result and index of non/TPromise that concluded
+ */
+TPromise.race = function (tpromises) {
+    return new TPromise(function (resolve, reject) {
+        if (!tpromises.length) {
+            return;
+        }
+
+        var arr = new TPromiseArray(tpromises);
+        arr.subscribe("onFirst", function (result, index, isResolved) {
+            if (isResolved) {
+                resolve([result, index]);
+            } else {
+                reject([result, index])
+            }
         });
 
         arr.attach();

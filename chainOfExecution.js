@@ -1,6 +1,7 @@
+
 /**
  * Refer to Chain Of Responsibility Pattern
- * Once decided, this pattern could fit our needs for TPromise
+ * Once decided, this pattern could fit our needs for Rhomise
  * together with State pattern most likely
  */
 function ChainOfExecution(callable) {
@@ -25,6 +26,7 @@ function ChainOfExecution(callable) {
      * @param {Array.<any>} params
      */
     this.handle = function (params) {
+        //Keep the callable's context by calling it with .apply
         this.callable.apply(null, params);
 
         if (this.next !== null) {
