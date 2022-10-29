@@ -28,7 +28,7 @@ var STATE = {
 /**
  * Creates an object which is capable of executing given callable on next event loop.
  * 
- * Major difference between this implementation and Promise is that
+ * * Major difference between this implementation and Promise is that
  * this implementation always keeps its instance with method calls
  * and does not return a new Promise by calling
  * methods such as then or catch. No difference in way of behaving
@@ -37,11 +37,13 @@ var STATE = {
  * 
  * var promise = new Promise(callable).then(callable2);  var promise2 = promise.then(callable3);
  * 
- * `promise !== promise2`
+ * `promise === promise2` FALSE
  * 
  * var tpromise = new TPromise(callable).then(callable2); var tpromise2 = tpromise.then(callable3);
  * 
- * `tpromise === tpromise2`
+ * `tpromise === tpromise2` TRUE
+ * 
+ * * In addition to that, finally callbacks also receives a parameter that represents previous callback result
  * 
  * @param {Function} callable Function to be called
  */
