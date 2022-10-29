@@ -136,25 +136,53 @@ function resolveWithTPromise() {
     });
 }
 
-var b = TPromise.any([
-    new TPromise(function (resolve, reject) {
++function fork() {
+    var tpromise1 = new Rhomise(function (resolve, reject) {
         setTimeout(function () {
-            resolve(123);
-        }, 500);
-    }),
-    new TPromise(function (resolve, reject) {
-        setTimeout(function () {
-            resolve("Other");
-        }, 4000);
-    }),
-    new TPromise(function (resolve, reject) {
-        resolve(12321312);
-    })
-]);
+            resolve(432);
+        }, 300)
+    });
+    var tpromise2 = tpromise1.then(function (res) {
+        return 32;
+    });
 
-b.then(function (t) {
-    console.log(t);
-}).catch(function (t) {
-    console.log("ERRRR", t);
-});
+    var tpromise3 = tpromise1.then(function (res) {
+        return 65;
+    }).fork();
+
+    tpromise1.then(function (res) {
+        return res * 432;
+    });
+
+    setTimeout(function () {
+        //Accessing the results this way is not recommended since you
+        //probably would not receive the value that you were expecting to receive
+        console.log("A:", tpromise1.getResult());
+        console.log("B:", tpromise2.getResult());
+        console.log("C:", tpromise3.getResult());
+        console.log("A === C", tpromise1 === tpromise3);
+        console.log("B === A", tpromise2 === tpromise1);
+    }, 1000);
+
+    var b = TPromise.any([
+        new TPromise(function (resolve, reject) {
+            setTimeout(function () {
+                resolve(123);
+            }, 500);
+        }),
+        new TPromise(function (resolve, reject) {
+            setTimeout(function () {
+                resolve("Other");
+            }, 4000);
+        }),
+        new TPromise(function (resolve, reject) {
+            resolve(12321312);
+        })
+    ]);
+
+    b.then(function (t) {
+        console.log(t);
+    }).catch(function (t) {
+        console.log("ERRRR", t);
+    });
 

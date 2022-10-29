@@ -5,7 +5,7 @@ var CALLBACK = {
 };
 
 /**
- * Base class for callback chains
+ * Base class for callback
  * 
  * @param {Number} type Type of callbacks: then, error, finally
  * @param {Function} callback Function to run
@@ -19,8 +19,7 @@ function ChainItem(type, callback) {
 /**
  * Executes the invoked object's callback and delegates the execution to next
  * 
- * @param {any} result Variable to pass to callback
- * @param {boolean} isError A boolean indicating whether result is an error
+ * @param {Object} payload Value that will be processed and modified
  * @throws {Error} On error inside callback and no further appropriate chain item available
  * @returns {Object} this
  */
@@ -35,8 +34,7 @@ ChainItem.prototype.handle = function (payload) {
 /**
  * Moves to the next item of chain or might throw an Error on non existence
  * 
- * @param {any} result 
- * @param {Boolean} isError 
+ * @param {Object} payload Value that will be processed and modified
  * @throws {Error} On no appropriate handlers present
  * @returns {ChainItem}
  */
@@ -55,7 +53,7 @@ ChainItem.prototype.tryNext = function (payload) {
 /**
  * Invokes the callback and can move to the next
  * 
- * @param {any} result 
+ * @param {Object} payload Value that will be processed and modified
  * @returns this or next object's this
  */
 ChainItem.prototype.execute = function (payload) {

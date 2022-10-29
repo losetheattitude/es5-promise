@@ -8,7 +8,7 @@ FinallyCallback.prototype = Object.create(ChainItem.prototype);
 FinallyCallback.prototype.constructor = FinallyCallback;
 /**
  * Returns an object that contains a callback which will be executed
- * regardless of previous callback state
+ * when no errors were present in previous callback
  * 
  * @param {Function} callback To be executed
  */

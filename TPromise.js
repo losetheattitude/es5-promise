@@ -31,19 +31,25 @@ var STATE = {
  * * Major difference between this implementation and Promise is that
  * this implementation always keeps its instance with method calls
  * and does not return a new Promise by calling
- * methods such as then or catch. No difference in way of behaving
+ * methods such as then or catch.
+ * 
  * 
  * Refer to following examples:
  * 
- * var promise = new Promise(callable).then(callable2);  var promise2 = promise.then(callable3);
+ * * var promise = new Promise(callable).then(callable2);  var promise2 = promise.then(callable3);
  * 
- * `promise === promise2` FALSE
+ * * `promise !== promise2` TRUE
  * 
- * var tpromise = new TPromise(callable).then(callable2); var tpromise2 = tpromise.then(callable3);
+ * * var tpromise = new TPhomise(callable).then(callable2); var tpromise2 = tpromise.then(callable3);
  * 
- * `tpromise === tpromise2` TRUE
+ * * `tpromise === tpromise2` TRUE --> This creates an effect where if you want to have 2 functions you want to
+ * handle seperately you will have to call .fork on the instance and receive a new Rhomise that will resolve or
+ * reject with the latest callback result of called instance
  * 
- * * In addition to that, finally callbacks also receives a parameter that represents previous callback result
+ * 
+ * 
+ * 
+ * In addition to that, finally callbacks also receive a parameter that represents previous callback result
  * 
  * @param {Function} callable Function to be called
  */
@@ -83,7 +89,7 @@ TPromise.prototype.isConcluded = function () {
 }
 
 /**
- * Returns its own completion value when no result is available on chain
+ * INTERNAL USAGE
  */
 TPromise.prototype.getResult = function () {
     var result = this.callbackChain.getResult();
@@ -117,7 +123,7 @@ TPromise.prototype.then = function (callback, thisArg) {
 /**
  * Registers an error callback and returns the called instance
  * 
- * @param {Function} callback callback to execute synchronously
+ * @param {Function} callback callback to execute
  * @param {Object|undefined} thisArg Context to pass to function 
  * @return {TPromise} Returns the object this function has been invoked on
  */
@@ -133,9 +139,9 @@ TPromise.prototype.catch = function (callback, thisArg) {
 /**
  * Registers a finally callback
  * 
- * @param {Function} callback callback to execute asynchronously
+ * @param {Function} callback callback to execute
  * @param {Object|undefined} thisArg Context to pass to function
- * @returns 
+ * @returns {TPromise}
  */
 TPromise.prototype.finally = function (callback, thisArg) {
     if (thisArg !== undefined) {
@@ -156,15 +162,39 @@ TPromise.prototype.finally = function (callback, thisArg) {
  * @param {Number} type Completion type
  * @param {any} value Value to complete with
  */
-TPromise.prototype.conclude = function (type, value) {
+TPromise.prototype.complete = function (type, value) {
     if (this.isConcluded()) {
         return this.result;
+    }
+
+    var rejected = type === STATE.REJECTED;
+    if (rejected && !(value instanceof Error)) {
+        value = new Error(value);
     }
 
     this.result = value;
     this.state = type;
 
-    this.callbackChain.setPayload(value, type === STATE.REJECTED).engage();
+    this.callbackChain.setPayload(value, rejected).engage();
+}
+
+/**
+ * Creates a new TPromise with latest return value of called instance's chain
+ * 
+ * @returns {TPromise}
+ */
+TPromise.prototype.fork = function () {
+    return new Rhomise((function (resolve, reject) {
+        this.then(function (res) {
+            resolve(res);
+
+            return res;
+        }).catch(function (err) {
+            reject(err);
+
+            throw err;
+        });
+    }).bind(this));
 }
 
 /**
@@ -174,7 +204,7 @@ TPromise.prototype.conclude = function (type, value) {
  * @throws {Error} On non-running states of TPromise
  */
 function resolve(value) {
-    this.conclude(STATE.RESOLVED, value);
+    this.complete(STATE.RESOLVED, value);
 }
 
 /**
@@ -184,7 +214,7 @@ function resolve(value) {
  * @throws {Error} On non-running states of TPromise
  */
 function reject(value) {
-    this.conclude(STATE.REJECTED, value);
+    this.complete(STATE.REJECTED, value);
 }
 
 /**
@@ -212,7 +242,7 @@ TPromise.reject = function (value) {
 }
 
 /**
- * Returns an TPromise which will be resolved with values once all of `tpromises` resolve
+ * Returns a TPromise which will be resolved with values once all of `tpromises` resolve
  * 
  * @param {Array.<TPromise>} tpromises
  * @returns {TPromise}
@@ -260,10 +290,10 @@ TPromise.any = function (tpromises) {
 }
 
 /**
- * Resolves on first concluded TPromise or a non-TPromise value
+ * Resolves on first completed TPromise or a non-TPromise value
  * 
  * @param {Array.<TPromise|any>} tpromises 
- * @returns {any} Result and index of non/TPromise that concluded
+ * @returns {any} Result and index of non/TPromise that completed
  */
 TPromise.race = function (tpromises) {
     return new TPromise(function (resolve, reject) {
@@ -301,10 +331,10 @@ TPromise.race = function (tpromises) {
  * Provides functionality while working with group of TPromises
  * 
  * Available Events (Callbacks will be called with below order):
- * - onFirst: Raised when first TPromise concludes
+ * - onFirst: Raised when first TPromise completes
  * - onResolve: Raised when a TPromise resolves 
  * - onReject: Raised with each TPromise reject
- * - onComplete: Raised when all TPromises conclude
+ * - onComplete: Raised when all TPromises complete
  * - onSuccess: Raised when all TPromises resolve
  * - onFailure: Raised when all TPromises reject
  * 
@@ -422,7 +452,7 @@ TPromiseArray.prototype.attach = function () {
                     reject(err);
                 }
 
-                return err;
+                throw err;
             }, this);
         }).bind(this));
     }, this);
