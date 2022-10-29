@@ -177,6 +177,9 @@ TPromise.prototype.complete = function (type, value) {
 /**
  * Creates a new TPromise with latest return value of called instance's chain
  * 
+ * Returned Rhomise will be completed on next event loop and its callbacks will be
+ * called in following event loop of the one in which it has been completed 
+ * 
  * @returns {TPromise}
  */
 TPromise.prototype.fork = function () {
