@@ -89,7 +89,8 @@ TPromise.prototype.isCompleted = function () {
 }
 
 /**
- * INTERNAL USAGE
+ * Solely intended for internal usage 
+ * Chances of you accessing the value that you have in mind is pretty low.
  */
 TPromise.prototype.getResult = function () {
     var result = this.callbackChain.getResult();
