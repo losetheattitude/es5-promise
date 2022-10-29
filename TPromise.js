@@ -40,7 +40,7 @@ var STATE = {
  * 
  * * `promise !== promise2` TRUE
  * 
- * * var tpromise = new TPhomise(callable).then(callable2); var tpromise2 = tpromise.then(callable3);
+ * * var tpromise = new TPromise(callable).then(callable2); var tpromise2 = tpromise.then(callable3);
  * 
  * * `tpromise === tpromise2` TRUE --> This creates an effect where if you want to have 2 functions you want to
  * handle seperately you will have to call .fork on the instance and receive a new Rhomise that will resolve or
@@ -167,14 +167,10 @@ TPromise.prototype.complete = function (type, value) {
         return this.result;
     }
 
-    var rejected = type === STATE.REJECTED;
-    if (rejected && !(value instanceof Error)) {
-        value = new Error(value);
-    }
-
     this.result = value;
     this.state = type;
 
+    var rejected = type === STATE.REJECTED;
     this.callbackChain.setPayload(value, rejected).engage();
 }
 
@@ -192,6 +188,10 @@ TPromise.prototype.fork = function () {
         }).catch(function (err) {
             reject(err);
 
+            //An edge case where we attach to first callback of rejected Rhomise
+            if (!(err instanceof Error)) {
+                err = new Error(err);
+            }
             throw err;
         });
     }).bind(this));
@@ -452,6 +452,10 @@ TPromiseArray.prototype.attach = function () {
                     reject(err);
                 }
 
+                //An edge case where we attach to first callback of rejected Rhomise
+                if (!(err instanceof Error)) {
+                    err = new Error(err);
+                }
                 throw err;
             }, this);
         }).bind(this));
