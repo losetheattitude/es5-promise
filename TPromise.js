@@ -189,6 +189,8 @@ TPromise.prototype.fork = function () {
             reject(err);
 
             //An edge case where we attach to first callback of rejected Rhomise
+            //This will lead to developer receiving rejected value as error
+            //Expected behavior is to receive as whatever is passed to .reject method
             if (!(err instanceof Error)) {
                 err = new Error(err);
             }
@@ -453,6 +455,8 @@ TPromiseArray.prototype.attach = function () {
                 }
 
                 //An edge case where we attach to first callback of rejected Rhomise
+                //This will lead to developer receiving rejected value as error
+                //Expected behavior is to receive as whatever is passed to .reject method
                 if (!(err instanceof Error)) {
                     err = new Error(err);
                 }
