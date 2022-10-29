@@ -20,9 +20,9 @@ function run() {
     ]);
 
     all.then(function (result) {
-        console.log("ALL THEN", result);
+        console.log("TPromise.all.then: ", result);
     }).catch(function (err) {
-        console.log("ALL ERROR", err);
+        console.log("TPromise.all.catch: ", err);
     });
 }
 
