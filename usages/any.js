@@ -17,10 +17,10 @@ function run() {
         })
     ]);
 
-    b.then(function (t) {
-        console.log(t);
-    }).catch(function (t) {
-        console.log("ERRRR", t);
+    b.then(function (res) {
+        console.log("Promise.any.then: ", res);
+    }).catch(function (err) {
+        console.log("Promise.any.catch: ", err);
     });
 }
 
