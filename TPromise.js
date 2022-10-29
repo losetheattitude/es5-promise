@@ -84,7 +84,7 @@ TPromise.prototype.toString = function () {
 /**
  * Returns a boolean indicating whether TPromise is still running or not
  */
-TPromise.prototype.isConcluded = function () {
+TPromise.prototype.isCompleted = function () {
     return this.state !== STATE.RUNNING;
 }
 
@@ -113,7 +113,7 @@ TPromise.prototype.then = function (callback, thisArg) {
     }
 
     this.callbackChain.register(new ThenCallback(callback));
-    if (this.isConcluded()) {
+    if (this.isCompleted()) {
         this.callbackChain.engage();
     }
 
@@ -149,7 +149,7 @@ TPromise.prototype.finally = function (callback, thisArg) {
     }
 
     this.callbackChain.register(new FinallyCallback(callback))
-    if (this.isConcluded()) {
+    if (this.isCompleted()) {
         this.callbackChain.engage();
     }
 
@@ -163,7 +163,7 @@ TPromise.prototype.finally = function (callback, thisArg) {
  * @param {any} value Value to complete with
  */
 TPromise.prototype.complete = function (type, value) {
-    if (this.isConcluded()) {
+    if (this.isCompleted()) {
         return this.result;
     }
 
@@ -428,7 +428,7 @@ TPromiseArray.prototype.attach = function () {
         }
 
         //Return result immediately if TPromise already completed
-        if (item.isConcluded() && !item.callbackChain.isEngaged()) {
+        if (item.isCompleted() && !item.callbackChain.isEngaged()) {
             return void this.resulted(
                 item.getResult(),
                 index,
