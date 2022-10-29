@@ -40,4 +40,4 @@ function run() {
     });
 }
 
-fork();
+run();
