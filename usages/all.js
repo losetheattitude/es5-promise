@@ -23,14 +23,6 @@ function run() {
         console.log("ALL THEN", result);
     }).catch(function (err) {
         console.log("ALL ERROR", err);
-
-        var timer = setInterval(function () {
-            console.log("Executing");
-        }, 500);
-
-        setTimeout(function () {
-            clearInterval(timer);
-        }, 10000);
     });
 }
 
