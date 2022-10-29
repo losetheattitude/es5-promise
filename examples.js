@@ -136,8 +136,8 @@ function resolveWithTPromise() {
     });
 }
 
-+function fork() {
-    var tpromise1 = new Rhomise(function (resolve, reject) {
+function fork() {
+    var tpromise1 = new TPromise(function (resolve, reject) {
         setTimeout(function () {
             resolve(432);
         }, 300)
@@ -157,13 +157,15 @@ function resolveWithTPromise() {
     setTimeout(function () {
         //Accessing the results this way is not recommended since you
         //probably would not receive the value that you were expecting to receive
-        console.log("A:", tpromise1.getResult());
-        console.log("B:", tpromise2.getResult());
-        console.log("C:", tpromise3.getResult());
-        console.log("A === C", tpromise1 === tpromise3);
-        console.log("B === A", tpromise2 === tpromise1);
+        console.log("tpromise1:", tpromise1.getResult());
+        console.log("tpromise2:", tpromise2.getResult());
+        console.log("tpromise3:", tpromise3.getResult());
+        console.log("tpromise1 === tpromise3", tpromise1 === tpromise3);
+        console.log("tpromise2 === tpromise1", tpromise2 === tpromise1);
     }, 1000);
+}
 
+function tpromiseAny() {
     var b = TPromise.any([
         new TPromise(function (resolve, reject) {
             setTimeout(function () {
@@ -185,4 +187,6 @@ function resolveWithTPromise() {
     }).catch(function (t) {
         console.log("ERRRR", t);
     });
+}
 
+fork();

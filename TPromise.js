@@ -15,7 +15,7 @@ var ERRORS = {
 };
 
 /**
- * Represents the available states of Rhomise object
+ * Represents the available states of TPromise object
  * 
  * @type {Object}
  */
@@ -43,7 +43,7 @@ var STATE = {
  * * var tpromise = new TPromise(callable).then(callable2); var tpromise2 = tpromise.then(callable3);
  * 
  * * `tpromise === tpromise2` TRUE --> This creates an effect where if you want to have 2 functions you want to
- * handle seperately you will have to call .fork on the instance and receive a new Rhomise that will resolve or
+ * handle seperately you will have to call .fork on the instance and receive a new TPromise that will resolve or
  * reject with the latest callback result of called instance
  * 
  * 
@@ -177,13 +177,13 @@ TPromise.prototype.complete = function (type, value) {
 /**
  * Creates a new TPromise with latest return value of called instance's chain
  * 
- * Returned Rhomise will be completed on next event loop and its callbacks will be
+ * Returned TPromise will be completed on next event loop and its callbacks will be
  * called in following event loop of the one in which it has been completed 
  * 
  * @returns {TPromise}
  */
 TPromise.prototype.fork = function () {
-    return new Rhomise((function (resolve, reject) {
+    return new TPromise((function (resolve, reject) {
         this.then(function (res) {
             resolve(res);
 
@@ -191,7 +191,7 @@ TPromise.prototype.fork = function () {
         }).catch(function (err) {
             reject(err);
 
-            //An edge case where we attach to first callback of rejected Rhomise
+            //An edge case where we attach to first callback of rejected TPromise
             //This will lead to developer receiving rejected value as error
             //Expected behavior is to receive as whatever is passed to .reject method
             if (!(err instanceof Error)) {
@@ -457,7 +457,7 @@ TPromiseArray.prototype.attach = function () {
                     reject(err);
                 }
 
-                //An edge case where we attach to first callback of rejected Rhomise
+                //An edge case where we attach to first callback of rejected TPromise
                 //This will lead to developer receiving rejected value as error
                 //Expected behavior is to receive as whatever is passed to .reject method
                 if (!(err instanceof Error)) {
@@ -470,7 +470,7 @@ TPromiseArray.prototype.attach = function () {
 }
 
 /**
- * This handler is only going to be called once with first resolved Rhomise
+ * This handler is only going to be called once with first resolved TPromise
  * 
  * @param {any} result 
  * @param {number} index 
@@ -488,7 +488,7 @@ function handleFirst(result, index, isResolved) {
 }
 
 /**
- * This handler will be called for every Rhomise
+ * This handler will be called for every TPromise
  * since its responsibility is adding results
  */
 function handleResult(result, index, isResolved) {
@@ -496,7 +496,7 @@ function handleResult(result, index, isResolved) {
 }
 
 /**
- * This handler will be called for every resolved Rhomise
+ * This handler will be called for every resolved TPromise
  */
 function handleResolve(result, index, isResolved) {
     if (!isResolved || !this.on["onResolve"]) {
@@ -516,14 +516,14 @@ function handleReject(result, index, isResolved) {
         return;
     }
 
-    //We could run each handler with Rhomise to avoid over occupying this cycle
+    //We could run each handler with TPromise to avoid over occupying this cycle
     for (var i = 0; i < this.on["onReject"].length; i++) {
         this.on["onReject"][i](result, index);
     }
 }
 
 /**
- * This handler will be called only once at the end regardless of Rhomises' states
+ * This handler will be called only once at the end regardless of TPromises' states
  */
 function handleComplete(result, index, isResolved) {
     if (!this.on['onComplete'] ||
@@ -531,16 +531,16 @@ function handleComplete(result, index, isResolved) {
         return;
     }
 
-    var rhomiseResults = this.completed.map(function (res) {
+    var tpromiseResults = this.completed.map(function (res) {
         return res[0];
     });
     for (var i = 0; i < this.on['onComplete'].length; i++) {
-        this.on["onComplete"][i](rhomiseResults);
+        this.on["onComplete"][i](tpromiseResults);
     }
 }
 
 /**
- * This handler will be called only if all Rhomises resolve
+ * This handler will be called only if all TPromises resolve
  */
 function handleSuccess(result, index, isResolved) {
     if (!this.on["onSuccess"] ||
@@ -552,16 +552,16 @@ function handleSuccess(result, index, isResolved) {
         return;
     }
 
-    var rhomiseResults = this.completed.map(function (res) {
+    var tpromiseResults = this.completed.map(function (res) {
         return res[0];
     });
     for (var i = 0; i < this.on['onSuccess'].length; i++) {
-        this.on['onSuccess'][i](rhomiseResults);
+        this.on['onSuccess'][i](tpromiseResults);
     }
 }
 
 /**
- * This handler will be called only if all Rhomises reject
+ * This handler will be called only if all TPromises reject
  */
 function handleFailure(result, index, isResolved) {
     if (!this.on["onFailure"] ||
@@ -573,11 +573,11 @@ function handleFailure(result, index, isResolved) {
         return;
     }
 
-    var rhomiseResults = this.completed.map(function (res) {
+    var tpromiseResults = this.completed.map(function (res) {
         return res[0];
     });
     for (var i = 0; i < this.on['onFailure'].length; i++) {
-        this.on['onFailure'][i](rhomiseResults);
+        this.on['onFailure'][i](tpromiseResults);
     }
 }
 
