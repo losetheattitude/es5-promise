@@ -539,16 +539,6 @@ function handleFailure(result, index, isResolved) {
 }
 
 module.exports = {
-    handleFirst,
-    handleResult,
-    handleResolve,
-    handleReject,
-    handleComplete,
-    handleSuccess,
-    handleFailure
-};
-
-module.exports = {
     TPromise,
     TPromiseArray
 };
