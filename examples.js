@@ -1,4 +1,4 @@
-var TPromise = require("./promise");
+var TPromise = require("./TPromise").TPromise;
 
 function tpromiseAll() {
     var all = TPromise.all([
@@ -21,7 +21,7 @@ function tpromiseAll() {
 
     all.then(function (result) {
         console.log("ALL THEN", result);
-    }).error(function (err) {
+    }).catch(function (err) {
         console.log("ALL ERROR", err);
 
         var timer = setInterval(function () {
@@ -57,7 +57,7 @@ function tpromiseChain() {
         return 5;
     });
 
-    tpromise2.error(function (err) {
+    tpromise2.catch(function (err) {
         console.log(err);
 
         return -1;
@@ -74,7 +74,7 @@ function tpromiseChain() {
             console.log("Second", result);
 
             throw new Error("Exception 1");
-        }).error(function (err) {
+        }).catch(function (err) {
             console.log("Third", err.message);
 
             return 5;
@@ -90,7 +90,7 @@ function tpromiseChain() {
             console.log("Sixth", res2);
 
             throw new Error("Exception 2");
-        }).error(function (err) {
+        }).catch(function (err) {
             console.log(err.message);
         });
     });
@@ -118,7 +118,7 @@ function resolveWithTPromise() {
         return 23;
     }).then(function (res) {
         throw new Error(res);
-    }).error(function (err) {
+    }).catch(function (err) {
         return new TPromise(function (resolve, reject) {
             setTimeout(function () {
                 console.log("Before resolving err");
@@ -131,7 +131,7 @@ function resolveWithTPromise() {
         });
 
         throw new Error("Works")
-    }).error(function (err) {
+    }).catch(function (err) {
         console.log(err);
     });
 }
@@ -154,6 +154,7 @@ var b = TPromise.any([
 
 b.then(function (t) {
     console.log(t);
-}).error(function (t) {
+}).catch(function (t) {
     console.log("ERRRR", t);
 });
+
