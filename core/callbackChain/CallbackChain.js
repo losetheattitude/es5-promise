@@ -1,6 +1,6 @@
 
 /**
- * Represents the cycle state of Rhomise object
+ * Represents the cycle state of TPromise object
  * 
  * @type {Object}
  */

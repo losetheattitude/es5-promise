@@ -1,6 +1,6 @@
 /**
  * Refer to CallbackChain Of Responsibility Pattern
- * Once decided, this pattern could fit our needs for Rhomise
+ * Once decided, this pattern could fit our needs for TPromise
  * together with State pattern most likely
  */
 function EventHandlerChain(callable) {
