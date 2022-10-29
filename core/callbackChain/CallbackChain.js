@@ -53,7 +53,7 @@ CallbackChain.prototype.setPayload = function (result, isError) {
  * @param {Boolean} shouldRun A boolean indicate
  */
 CallbackChain.prototype.engage = function () {
-    if (this.isEngaged()) {
+    if (this.isEngaged() || this.first === null) {
         return;
     }
 
@@ -95,9 +95,7 @@ CallbackChain.prototype.isEngaged = function () {
  * Starts execution and after completion, prepares internal state for next
  */
 CallbackChain.prototype.run = function () {
-    if (this.first) {
-        this.first.handle(this.payload);
-    }
+    this.first.handle(this.payload);
 
     this.next = null;
     this.first = null;
