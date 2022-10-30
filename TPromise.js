@@ -104,7 +104,7 @@ TPromise.prototype.getResult = function () {
 /**
  * Registers a then callback and returns the called instance
  * 
- * @param {Function} callback callback to execute asynchronously
+ * @param {Function} callback callback to execute
  * @param {Object|undefined} thisArg Context to pass to function
  * @return {TPromise} Returns the object that this function has been invoked on
  */
