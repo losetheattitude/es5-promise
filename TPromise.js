@@ -67,7 +67,7 @@ var STATE = {
  * 
  * The very same thing can occur with Promise implementation as well where second promise takes two loops to complete
  * therefore first Promise exhausts its callbacks before second one even starts. Its better to not depend Promises
- * to eachother and outside as much as possible. If you have to, just use them as input to be read. 
+ * to eachother and outside as much as possible. Only reading purposes must be employed.
  * 
  * 
  * In addition to what is above, finally callbacks also receive a parameter that represents previous callback result
