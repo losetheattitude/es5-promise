@@ -7,10 +7,10 @@ var CALLBACK = {
 /**
  * Base class for callback
  * 
- * @param {Number} type Type of callbacks: then, error, finally
  * @param {Function} callback Function to run
+ * @param {Number} type Type of callback
  */
-function ChainItem(type, callback) {
+function ChainItem(callback, type) {
     this.type = type;
     this.callback = callback;
     this.next = null

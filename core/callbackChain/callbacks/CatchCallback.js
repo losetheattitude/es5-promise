@@ -12,7 +12,7 @@ CatchCallback.prototype.constructor = CatchCallback;
  * @param {Function} callback 
  */
 function CatchCallback(callback) {
-    ChainItem.apply(this, [CALLBACK.ERROR, callback]);
+    ChainItem.apply(this, [callback, CALLBACK.ERROR]);
 }
 
 /**

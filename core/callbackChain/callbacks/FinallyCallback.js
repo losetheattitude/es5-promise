@@ -13,7 +13,7 @@ FinallyCallback.prototype.constructor = FinallyCallback;
  * @param {Function} callback To be executed
  */
 function FinallyCallback(callback) {
-    ChainItem.apply(this, [CALLBACK.FINALLY, callback]);
+    ChainItem.apply(this, [callback, CALLBACK.FINALLY]);
 }
 
 /**

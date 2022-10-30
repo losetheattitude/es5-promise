@@ -49,8 +49,6 @@ CallbackChain.prototype.setPayload = function (result, isError) {
 
 /**
  * Schedules execution to next event loop if it has not already been scheduled
- * 
- * @param {Boolean} shouldRun A boolean indicate
  */
 CallbackChain.prototype.engage = function () {
     if (this.isEngaged() || this.first === null) {

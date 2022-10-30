@@ -13,7 +13,7 @@ ThenCallback.prototype.constructor = ThenCallback;
  * @param {Function} callback To be executed
  */
 function ThenCallback(callback) {
-    ChainItem.apply(this, [CALLBACK.THEN, callback]);
+    ChainItem.apply(this, [callback, CALLBACK.THEN]);
 }
 
 /**

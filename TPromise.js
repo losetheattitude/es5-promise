@@ -28,28 +28,49 @@ var STATE = {
 /**
  * Creates an object which is capable of executing given callable on next event loop.
  * 
- * * Major difference between this implementation and Promise is that
- * this implementation always keeps its instance with method calls
- * and does not return a new Promise by calling
- * methods such as then or catch.
- * 
+ * * Major difference between this implementation and Promise is that this implementation always keeps 
+ * its instance with method calls and does not return a new TPromise by calling methods such as then or catch. 
  * 
  * Refer to following examples:
  * 
- * * var promise = new Promise(callable).then(callable2);  var promise2 = promise.then(callable3);
- * 
+ * * var promise = new Promise(callable).then(callable2); 
+ * * var promise2 = promise.then(callable3);
  * * `promise !== promise2` TRUE
  * 
- * * var tpromise = new TPromise(callable).then(callable2); var tpromise2 = tpromise.then(callable3);
+ * * 
  * 
+ * * var tpromise = new TPromise(callable).then(callable2); 
+ * * var tpromise2 = tpromise.then(callable3);
  * * `tpromise === tpromise2` TRUE --> This creates an effect where if you want to have 2 functions you want to
- * handle seperately you will have to call .fork on the instance and receive a new TPromise that will resolve or
- * reject with the latest callback result of called instance
+ * handle seperately you are going to have to call .fork after calling any of the available callback methods and receive a new TPromise that will resolve 
+ * or reject with result of callback that the .fork method has called on. This forces newly created TPromise's callbacks 
+ * to execute only after former TPromise's callbacks exhaust.
+ * 
+ * 
+ * * Calling .fork on instance is a valid option although you may not receive the value that you are expecting to receive.
+ * Result of such an action will be the result of latest callback that has been attached to former TPromise before .fork called.
  * 
  * 
  * 
+ *  Using callback chain introduces its own problems like deferring the whole chain to next loop as opposed to 
+ * deferring each registered callback seperately. Because of this, execution wont follow 
+ * the code order instead it will complete executing first scheduled TPromise's callbacks then it switchs to next.
+ * Using this approach only thing that could pose a threat is setting global variables in TPromises and
+ * accessing them inside other TPromises. Next release it will be modified to follow intuitive way.
  * 
- * In addition to that, finally callbacks also receive a parameter that represents previous callback result
+ * Refer to following examples:
+ * 
+ * var tpromise1 = new TPromise(callable); var tpromise2 = new TPromise(callable2);
+ * * tpromise1.then(callable3);  -->  1) 
+ * * tpromise2.then(callable4);  -->  3)
+ * * tpromise1.then(callable5);  -->  2)
+ * 
+ * The very same thing can occur with Promise implementation as well where second promise takes two loops to complete
+ * therefore first Promise exhausts its callbacks before second one even starts. Its better to not depend Promises
+ * to eachother and outside as much as possible. If you have to, just use them as input to be read. 
+ * 
+ * 
+ * In addition to what is above, finally callbacks also receive a parameter that represents previous callback result
  * 
  * @param {Function} callable Function to be called
  */
